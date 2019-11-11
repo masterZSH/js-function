@@ -1,7 +1,6 @@
 require('../dist/index');
 describe('test apply', () => {
     let testFunc = function () {
-        console.log([this,arguments]);
         return [this, arguments];
     }
     let context = {

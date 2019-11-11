@@ -43,25 +43,93 @@ Function.prototype.apply = function (context, argArray) {
     delete context.fn;
     return result;
 };
+const getType = (variable) => Object.prototype.toString.call(variable);
+const mapTag = '[object Map]';
+const setTag = '[object Set]';
+const arrayTag = '[object Array]';
+const objectTag = '[object Object]';
+const argumentsTag = '[object Arguments]';
+const boolTag = '[object Boolean]';
+const numberTag = '[object Number]';
+const stringTag = '[object String]';
+const symbolTag = '[object Symbol]';
+const dateTag = '[object Date]';
+const errorTag = '[object Error]';
+const regexpTag = '[object RegExp]';
+const funcTag = '[object Function]';
+const canTraverse = {};
+canTraverse[mapTag] =
+    canTraverse[setTag] =
+        canTraverse[arrayTag] =
+            canTraverse[objectTag] =
+                canTraverse[argumentsTag] = true;
+const handleRegExp = (target) => {
+    const { source, flags } = target;
+    return new RegExp(source, flags);
+};
+const handleFunc = (target) => {
+    return target;
+};
+const handleNotTraverse = (target) => {
+    const tag = getType(target);
+    const Ctor = target.constructor;
+    switch (tag) {
+        case numberTag:
+        case stringTag:
+            return new Ctor(target);
+        case symbolTag:
+            return new Object(Symbol.prototype.valueOf.call(target));
+        case errorTag:
+        case boolTag:
+        case dateTag:
+            return new Ctor(+target);
+        case regexpTag:
+            return handleRegExp(target);
+        case funcTag:
+            return handleFunc(target);
+        default:
+            return new Ctor(target);
+    }
+};
 /**
  *
  */
-const copy = function (target, map = new Map()) {
+const copy = function (target, map = new WeakMap()) {
     if (map.get(target))
         return target;
     if (typeof target !== 'object' || target === null) {
         return target;
     }
+    let cloneTarget;
+    const type = getType(target);
+    if (!canTraverse[type]) {
+        // 处理不能遍历的对象
+        return handleNotTraverse(target);
+    }
+    else {
+        let ctor = target.constructor;
+        cloneTarget = new ctor();
+    }
+    // 处理循环引用
     map.set(target, true);
-    let cloneObject = Array.isArray(target) ? [] : {};
+    if (type === mapTag) {
+        //处理Map
+        target.forEach((item, key) => {
+            cloneTarget.set(copy(key, map), copy(item, map));
+        });
+    }
+    if (type === setTag) {
+        //处理Set
+        target.forEach((item) => {
+            cloneTarget.add(copy(item, map));
+        });
+    }
     for (const prop in target) {
         if (target.hasOwnProperty(prop)) {
-            cloneObject[prop] = copy(target[prop], map);
+            cloneTarget[prop] = copy(target[prop], map);
         }
     }
-    return cloneObject;
+    return cloneTarget;
 };
 exports.default = copy;
 //# sourceMappingURL=index.js.map
-
-
