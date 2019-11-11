@@ -1,4 +1,4 @@
-require('../index');
+require('../dist/index');
 describe('test bind', () => {
     let testFunc = function () {
         var result = [this];
@@ -9,7 +9,7 @@ describe('test bind', () => {
         foo: 1,
         bar: 2
     };
-    let testBindFunc = testFunc._bind(context);
+    let testBindFunc = testFunc.bind(context);
     test('test bind function prototype', () => {
         expect(testBindFunc.prototype.__proto__).toBe(testFunc.prototype);
     });
